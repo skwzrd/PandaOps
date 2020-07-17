@@ -18,9 +18,79 @@ body {
     padding-right: 5px;
 }
 
+form {
+    background-color: rgb(60, 82, 104);
+    border-radius: 3px;
+    border: 0px solid;
+    padding: 6px;
+    margin: 0 auto;
+}
+
+table {
+    border-collapse: collapse;
+    border: 1px solid;
+    width: 100%;
+}
+
+tr, td, th {
+    border: none;
+    padding: 3px;
+    text-align: left;
+}
+
+thead tr th {
+    border-bottom: 1px solid;
+    background-color: rgb(29, 29, 29)
+}
+
+th {
+    text-emphasis: bold;
+}
+
+.table_wrapper {
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+tr:nth-child(even) {background-color: rgb(46, 46, 46)}
+tr:nth-child(odd) {background-color: rgb(63, 63, 63)}
+
 .row {
     display: flex;
-    justify-content: space-between;
+    width: 100%;
+}
+
+input[type="submit"] {
+	background:linear-gradient(to bottom, #7892c2 0%, #476e9e 100%);
+	background-color:#7892c2;
+	border-radius:5px;
+	border:0px solid;
+    display:inline-block;
+    margin: 3px;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:Arial;
+	padding:3px;
+	text-decoration:none;
+}
+
+input[type="submit"]:hover {
+	background:linear-gradient(to bottom, #476e9e 5%, #7892c2 100%);
+	background-color:#476e9e;
+}
+
+input[type="submit"]:focus {
+	position:relative;
+    top:1px;
+    background:linear-gradient(to bottom, #3a5677 5%, #5d6b86 100%);
+	background-color:#384d68;
+}
+
+.pressed {
+	position:relative;
+    top:1px;
+    background:linear-gradient(to bottom, #3a5677 5%, #5d6b86 100%);
+	background-color:#384d68;
 }
 
 .close {

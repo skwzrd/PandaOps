@@ -1,56 +1,124 @@
 import os
 import pandas as pd
-from flask import Flask, render_template, request, url_for, session
+import redis
+import pyarrow
+from io import BytesIO
+import subprocess
+from flask import Flask, render_template, request, session, url_for
+
+# local redis exe filepath: C:\\Users\Michael\AppData\Local\redis\64bit\redis-server.exe
+# where to download redis for windows: https://github.com/dmajkic/redis/downloads
+# how to store dataframes with redis: https://stackoverflow.com/a/57986261/9576988
+
+redis_log = 'redis_output.txt'
+redis_server_exe_path = r"C:\\Users\Michael\AppData\Local\redis\64bit\redis-server.exe"
+
+with open(redis_log, mode='w') as f:
+    proc = subprocess.Popen(
+        redis_server_exe_path,
+        stdout=f
+    )
+r = redis.Redis(host='localhost', port=6379, db=0)
+r_context = pyarrow.default_serialization_context()
+
 
 app = Flask(__name__, static_url_path='/static')
+
 
 UPLOAD_FOLDER = 'UPLOAD_FOLDER'
 ALLOWED_FILETYPES = {'.csv'}
 app.config[UPLOAD_FOLDER] = 'static/temp'
 app.config['SECRET_KEY'] = '123456'
 
-DATABASE = 'db/img_board.db'
-SCHEMA = 'db/schema.sql'
 
 # TODO
 # ====
-# do not store df's in sessions (there is a small size limit) - find something else
-# clean up home()
+# replace df list dropdown with <ul>
+# check for duplicate records
+# filter by column values
 # refactor code into appropriate modules
 # show/hide column dtypes
 # convert column dtypes
-# apply methods on df column
-# create/remove column
-# plot df
-# save 
-# css (tailwind?)
+# apply methods on dfs
+# create/remove columns
+# plot df's
+# save plots
+# save modified df's
 
+# DONE
+# ====
+# rearrange buttons
+# do not store df's in sessions (there is 4092 byte limit) - find something else
+# clean up home()
+# css styling (good enough for now)
+
+
+
+def make_df_key(key):
+    if key.startswith('df_'):
+        return key
+    return'df_'+key
 
 def get_session_df(key):
-    if key in session['dfs'].keys():
-        print(f'\'{key}\' found in session\'s df\'s.')
-        return pd.read_json(session['dfs'][key])
-    print(f'\'{key}\' not found in session\'s df\'s.')
+    key = make_df_key(key)
+    if session_key_exists(key):
+        df = r_context.deserialize(r.get(key))
+        return df
     return None
 
 
 def set_session_df(key, df):
-    session['dfs'][key] = df.to_json()
+    key = make_df_key(key)
+    r.set(key, r_context.serialize(df).to_buffer().to_pybytes())
     change_selected_df_key(key)
-    session.modified = True
 
 
 def clear_session_dfs():
-    session['dfs'] = {}
+    for key in get_df_keys():
+        print(f'Deleting df from cache: {key}.')
+        r.delete(key)
+
+
+def get_df_keys():
+    return [key.decode() for key in r.keys(pattern='df_*')]
+
+
+def decode_keys(keys):
+    return [key.lstrip('df_') for key in keys]
+
+
+def get_ordered_df_keys():
+    """Returns list of df keys (names) from the session with the selected df at index 0."""
+    df_keys = get_df_keys()
+    selected_df = get_selected_df_key()
+
+    if len(df_keys) == 0:
+        return None
+
+    if len(df_keys) > 1:
+        for x in df_keys:
+            if x == selected_df:
+                df_keys.remove(x)
+        df_keys = [selected_df] + df_keys
+
+    return decode_keys(df_keys)
+
+
+def session_key_exists(key):
+    if r.exists(key):
+        return True
+    return False
 
 
 def change_selected_df_key(key):
-    session['selected_df'] = key
-    session.modified = True
+    r.set('selected_df', key)
 
 
 def get_selected_df_key():
-    return session['selected_df']
+    key = r.get('selected_df')
+    if key:
+        key = make_df_key(key.decode())
+    return key
 
 
 def get_sample_df():
@@ -65,9 +133,6 @@ def get_sample_df():
             'F': 'foo'
         })
         set_session_df('Sample DF', df)
-        print('Added new sample df to session.')
-    else:
-        print('Loaded sample df from session.')
     return df
 
 
@@ -86,94 +151,74 @@ def load_df_from_path(path):
     if df is None:
         df = pd.read_csv(path)
         set_session_df(filename, df)
+    return df
 
+
+def df_from_request(f):
+    filename = f.filename
+    f_bytes = f.read()
+    f.close()
+
+    df = get_session_df(filename)
+    if df is None:
+        df = pd.read_csv(BytesIO(f_bytes))
+        set_session_df(filename, df)
     return df
 
 
 def operations(operation):
-    print(operation)
     df = get_session_df(get_selected_df_key())
     if df is not None:
         if operation == 'All':
             df = df
         elif operation == 'Describe':
             df = df.describe()
-        elif operation == 'Top 50':
-            df = df.iloc[:50]
         elif operation == 'Head':
             df = df.head()
+        elif operation == 'Tail':
+            df = df.tail()
+    return df
 
+
+def select_different_df(key):
+    df = get_session_df(key)
+    change_selected_df_key(key)
     return df
 
 
 def clear_df_display(command):
-    if command == 'Clear View':
-        print('Clearing view.')
-
-    elif command == 'Clear DF Cache':
-        print('Clearing df\'s in session.')
+    if command == 'Clear DF Cache':
         clear_session_dfs()
-
-
-def get_df_keys():
-    """Returns list of df keys (names) from the session with the selected df at index 0."""
-    df_keys = list(session['dfs'].keys())
-
-    if len(df_keys) == 0:
-        return None
-
-    elif len(df_keys) == 1:
-        return df_keys
-
-    else:
-        for x in df_keys:
-            if x == session['selected_df']:
-                df_keys.remove(x)
-
-        df_keys = [session['selected_df']] + df_keys
-
-    return df_keys
-
-
-def initialize_session():
-    session['dfs'] = {}
-    session['selected_df'] = None
-    session.modified = True
+    df = None
+    return df
 
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    if 'dfs' not in session.keys():
-        print('Initializing session df\'s.')
-        initialize_session()
-
     df = None
     if request.method == 'POST':
         
-        if ('get_df' in request.files) and (request.files['get_df']):
-            print(f"Uploading file \'{request.files['get_df']}\'.")
-            path = save_uploaded_csv(request.files['get_df'])
-            df = load_df_from_path(path)
+        if ('upload_df' in request.files) and (request.files['upload_df']):
+            print(f"Uploading file {request.files['upload_df'].filename}.")
+            df = df_from_request(request.files['upload_df'])
 
-        elif ('get_df' in request.form) and(request.form['get_df'] == 'Load Sample DF'):
+        elif ('sample_df' in request.form):
             print('Loading sample df.')
             df = get_sample_df()
 
         elif ('clear' in request.form):
-            clear_df_display(request.form['clear'])
-            df = None
+            print('Clearing view.')
+            df = clear_df_display(request.form['clear'])
 
         elif ('operate' in request.form):
-            print('Performing operation.')
+            print('Operation recieved.')
             df = operations(request.form['operate'])
         
         elif ('df_selection' in request.form):
-            print('Switching df based on form selection.')
-            df = get_session_df(request.form['df_selection'])
-            change_selected_df_key(request.form['df_selection'])
+            print('Selecting different df.')
+            df = select_different_df(request.form['df_selection'])
 
     if df is not None:
         df = df.to_html()
 
-    return render_template('home.html', df=df, df_keys=get_df_keys())
-
+    return render_template('home.html', df=df, df_keys=get_ordered_df_keys())
