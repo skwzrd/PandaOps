@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Panda Pops</title>
+        <link href="{{ url_for('static', filename='css/index.css') }}" rel="stylesheet">
+        <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='images/panda_pops.PNG') }}"/>
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+    </body>
+</html>

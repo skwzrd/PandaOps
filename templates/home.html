@@ -1,0 +1,64 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<div>
+    <h1>Panda Pops</h1>
+    <br>
+
+    <div class="row">
+        <form method="POST" action="/" enctype="multipart/form-data">
+            Import CSV
+            <br>
+            <input type="file" name="get_df" accept=".csv">
+            <input type="submit">
+            <br>
+            <input type="submit" name="get_df" value="Load Sample DF">
+        </form>
+
+        <form method="POST" action="/" enctype="multipart/form-data">
+            <br>
+            <input type="submit" name="clear" value="Clear View">
+            <br>
+            <input type="submit" name="clear" value="Clear DF Cache">
+        </form>
+        <br>
+    </div>
+
+    <div>
+        <br>
+        <form method="POST" action="/" enctype="multipart/form-data">
+            <div>
+                {% if df_keys is not none %}
+                    Select from loaded DF's
+                    <br>
+                    <select name="df_selection">
+                        {% for df_key in df_keys %}
+                            <option value="{{ df_key }}">{{ df_key }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit">
+                {% else %}
+                    No DF's have been loaded yet.
+                {% endif %}
+            </div>
+            <br>
+        </form>
+        <br>
+    </div>
+    
+    {% if df is not none %}
+        <form method="POST" action="/" enctype="multipart/form-data">
+            Operations
+            <br>
+            <input type="submit" name="operate" value="All">
+            <input type="submit" name="operate" value="Head">
+            <input type="submit" name="operate" value="Top 50">
+            <input type="submit" name="operate" value="Describe">
+        </form>
+        <br>
+        {{ df | safe}}
+    {% endif %}
+</div>
+
+{% endblock %}
