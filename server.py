@@ -18,6 +18,7 @@ with open(redis_log, mode='w') as f:
         redis_server_exe_path,
         stdout=f
     )
+
 r = redis.Redis(host='localhost', port=6379, db=0)
 r_context = pyarrow.default_serialization_context()
 
@@ -33,7 +34,6 @@ app.config['SECRET_KEY'] = '123456'
 
 # TODO
 # ====
-# replace df list dropdown with <ul>
 # check for duplicate records
 # filter by column values
 # refactor code into appropriate modules
@@ -47,82 +47,102 @@ app.config['SECRET_KEY'] = '123456'
 
 # DONE
 # ====
+# replace df list dropdown with <ul>
+# convert post requests to ajax
 # rearrange buttons
 # do not store df's in sessions (there is 4092 byte limit) - find something else
 # clean up home()
 # css styling (good enough for now)
 
 
-
 def make_df_key(key):
+    """Serialized keys for dfs"""
     if key.startswith('df_'):
         return key
     return'df_'+key
 
-def get_session_df(key):
+
+def get_df_keys():
+    """Gets all df keys from redis"""
+    return [key.decode() for key in r.keys(pattern='df_*')]
+
+
+def get_df_keys_deserialized(keys):
+    """Deserializes given keys"""
+    return [key.replace('df_', '') for key in keys]
+
+
+def is_df_key(key):
+    """Does this qualify as a df key?"""
+    if key is not None and key.startswith('df_'):
+        return True
+    return False
+
+
+def get_redis_df(key):
+    """Given a key, returns a df from redis"""
     key = make_df_key(key)
-    if session_key_exists(key):
+    if redis_key_exists(key):
         df = r_context.deserialize(r.get(key))
         return df
     return None
 
 
-def set_session_df(key, df):
+def add_redis_df(key, df):
+    """Adds new df to redis, selects new df"""
     key = make_df_key(key)
     r.set(key, r_context.serialize(df).to_buffer().to_pybytes())
-    change_selected_df_key(key)
+    set_selected_df(key)
 
 
-def clear_session_dfs():
+def delete_redis_dfs():
+    """Deletes all dfs in redis"""
     for key in get_df_keys():
         print(f'Deleting df from cache: {key}.')
         r.delete(key)
 
 
-def get_df_keys():
-    return [key.decode() for key in r.keys(pattern='df_*')]
-
-
-def decode_keys(keys):
-    return [key.lstrip('df_') for key in keys]
-
-
-def get_ordered_df_keys():
+def get_all_df_keys_deserialized():
     """Returns list of df keys (names) from the session with the selected df at index 0."""
     df_keys = get_df_keys()
-    selected_df = get_selected_df_key()
-
-    if len(df_keys) == 0:
-        return None
-
-    if len(df_keys) > 1:
-        for x in df_keys:
-            if x == selected_df:
-                df_keys.remove(x)
-        df_keys = [selected_df] + df_keys
-
-    return decode_keys(df_keys)
+    df_keys = get_df_keys_deserialized(df_keys)
+    return df_keys
 
 
-def session_key_exists(key):
-    if r.exists(key):
+def redis_key_exists(key):
+    """Is a given key in redis"""
+    if r.exists(key) > 0:
         return True
     return False
 
 
-def change_selected_df_key(key):
-    r.set('selected_df', key)
+def set_selected_df(key):
+    """Given a key, this will be assigned as our selected df"""
+    if is_df_key(key):
+        r.set('selected_df', key)
+    else:
+        raise ValueError(f'Key {key} doesnt belong to df')
 
 
 def get_selected_df_key():
+    """Returns our selected df key"""
     key = r.get('selected_df')
     if key:
         key = make_df_key(key.decode())
     return key
 
 
+def get_and_select_df(key):
+    """Gets df from redis with the given key.
+        Makes the given key our selected df"""
+    df = get_redis_df(key)
+    set_selected_df(key)
+    return df
+
+
 def get_sample_df():
-    df = get_session_df('Sample DF')
+    """Returns a sample df and makes it the selected df"""
+    df = get_redis_df('df_sample')
     if df is None:
         df = pd.DataFrame({
             'A': 1.,
@@ -132,11 +152,12 @@ def get_sample_df():
             'E': pd.Categorical(["test", "train", "test", "train"]),
             'F': 'foo'
         })
-        set_session_df('Sample DF', df)
+        add_redis_df('df_sample', df)
     return df
 
 
 def save_uploaded_csv(file):
+    """Saves a csv on the server, returns the save's destination"""
     save_path = os.path.abspath(app.config[UPLOAD_FOLDER])
     os.makedirs(save_path, exist_ok=True)
     save_as = os.path.join(save_path, file.filename)
@@ -145,12 +166,13 @@ def save_uploaded_csv(file):
 
 
 def load_df_from_path(path):
+    """Reads a df from a given path to a CSV file"""
     filename = os.path.basename(path)
 
-    df = get_session_df(filename)
+    df = get_redis_df(filename)
     if df is None:
         df = pd.read_csv(path)
-        set_session_df(filename, df)
+        add_redis_df(filename, df)
     return df
 
 
@@ -159,19 +181,26 @@ def df_from_request(f):
     f_bytes = f.read()
     f.close()
 
-    df = get_session_df(filename)
+    df = get_redis_df(filename)
     if df is None:
-        df = pd.read_csv(BytesIO(f_bytes))
-        set_session_df(filename, df)
+        try: # utf-8
+            df = pd.read_csv(BytesIO(f_bytes))
+        except UnicodeDecodeError:
+            try:
+                df = pd.read_csv(BytesIO(f_bytes), encoding='latin1')
+            except UnicodeDecodeError:
+                df = pd.read_csv(BytesIO(f_bytes), encoding='cp1252')
+
+        add_redis_df(filename, df)
     return df
 
 
 def operations(operation):
-    df = get_session_df(get_selected_df_key())
+    df = get_redis_df(get_selected_df_key())
     if df is not None:
         if operation == 'All':
             df = df
-        elif operation == 'Describe':
+        elif operation == 'Stats':
             df = df.describe()
         elif operation == 'Head':
             df = df.head()
@@ -181,44 +210,95 @@ def operations(operation):
 
 
 def select_different_df(key):
-    df = get_session_df(key)
-    change_selected_df_key(key)
+    df = get_redis_df(key)
+    set_selected_df(key)
     return df
 
 
 def clear_df_display(command):
-    if command == 'Clear DF Cache':
-        clear_session_dfs()
+    if command == 'all':
+        delete_redis_dfs()
     df = None
     return df
 
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    df = None
-    if request.method == 'POST':
-        
-        if ('upload_df' in request.files) and (request.files['upload_df']):
-            print(f"Uploading file {request.files['upload_df'].filename}.")
-            df = df_from_request(request.files['upload_df'])
+    return render_template('home.html', df_keys=get_all_df_keys_deserialized())
 
-        elif ('sample_df' in request.form):
-            print('Loading sample df.')
-            df = get_sample_df()
 
-        elif ('clear' in request.form):
-            print('Clearing view.')
-            df = clear_df_display(request.form['clear'])
-
-        elif ('operate' in request.form):
-            print('Operation recieved.')
-            df = operations(request.form['operate'])
-        
-        elif ('df_selection' in request.form):
-            print('Selecting different df.')
-            df = select_different_df(request.form['df_selection'])
-
+def prep_df_for_html(df):
     if df is not None:
+        df = df.iloc[:50]
         df = df.to_html()
+    return df
 
-    return render_template('home.html', df=df, df_keys=get_ordered_df_keys())
+
+@app.route('/display_df')
+def display_df():
+    df = None
+
+    command = request.args.get('command')
+    command = make_df_key(command)
+    print(f"display_df() command {command}")
+
+    if command=="df_sample":
+        print('Loading df_sample.')
+        df = get_sample_df()
+        set_selected_df(command)
+    else:
+        df = get_and_select_df(command)
+    
+    df = prep_df_for_html(df)
+    if df is None:
+        return ""
+
+    return df
+
+
+@app.route('/upload_df', methods=['POST'])
+def upload_df():
+    df = None
+    try:
+        file = request.files['upload_df']
+
+        print(f"Uploading file {file.filename}.")
+        df = df_from_request(file)
+    except:
+        print("Couldn't upload file {file.filename}.")
+
+    return prep_df_for_html(df)
+
+
+@app.route('/operate_df')
+def operate_df():
+    print(get_selected_df_key())
+    command = request.args.get('command')
+    print(f'Operation recieved: {command}.')
+    df = operations(command)
+    df = prep_df_for_html(df)
+    return df
+
+
+@app.route('/clear_df_cache')
+def clear_df_cache():
+    print('Clearing view.')
+    command = request.args.get('command')
+    df = clear_df_display(command)
+    df = prep_df_for_html(df)
+    if df is None:
+        return ""
+    return df
+
+
+@app.route('/loaded_dfs')
+def get_loaded_dfs():
+    """Returns a list of dfs from redis in an html <ul>"""
+    keys = get_all_df_keys_deserialized()
+    if keys == None:
+        return ""
+    string = "<ul>"
+    for key in get_all_df_keys_deserialized():
+        string +=  "<li>"+key+"</li>"
+    string += "</ul>"
+    return string

@@ -1,124 +1,138 @@
-h1 {
-    font-size: xx-large;
-    color: #c6c8c6;
-    margin: 0 auto;
-    display: block;
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+    border-radius: 3px;
 }
 
+li {
+    padding: 4px;
+}
+
+.alignleft {
+    float: left;
+}
+
+.alignright {
+    float: right;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #333;
+    z-index: 1;
+    border-radius: 3px;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+    color: #f8f8f0;
+    border: solid 1px;
+    font-size: small;
+}
+
+.dropdown-content{
+    color: #f8f8f0;
+}
 
 body {
-    background: #1d1f21;
-    color: #c5c8c6;
-    font-family: arial,helvetica,sans-serif;
-    font-size: 10pt;
-    margin-left: 0;
-    margin-right: 0;
-    margin-top: 5px;
-    padding-left: 5px;
-    padding-right: 5px;
+    font-family: sans-serif;
+    color: #f8f8f0;
+    background-color: #1e1e1e;
+    background: #1e1e1e;
+    -webkit-font-smoothing: antialiased !important;
 }
 
-form {
-    background-color: rgb(60, 82, 104);
-    border-radius: 3px;
-    border: 0px solid;
-    padding: 6px;
-    margin: 0 auto;
-}
-
-table {
-    border-collapse: collapse;
-    border: 1px solid;
-    width: 100%;
-}
-
-tr, td, th {
-    border: none;
-    padding: 3px;
+.rendered_html tr,
+.rendered_html th,
+.rendered_html td {
     text-align: left;
+    vertical-align: middle;
+    padding: 0.42em 0.47em;
+    line-height: normal;
+    white-space: normal;
+    max-width: none;
+    border: none;
 }
 
-thead tr th {
-    border-bottom: 1px solid;
-    background-color: rgb(29, 29, 29)
+.rendered_html td {
+ font-family: sans-serif !important;
+ font-size: 9.3pt;
 }
 
-th {
-    text-emphasis: bold;
+.rendered_html table {
+    font-family: sans-serif !important;
+    margin-left: 8px;
+    margin-right: auto;
+    border: none;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: #cccccc;
+    table-layout: fixed;
 }
 
-.table_wrapper {
-    border-radius: 3px;
-    overflow: hidden;
+.rendered_html thead {
+    font-family: sans-serif !important;
+    font-size: 10.3pt !important;
+    background: #1e1e1e;
+    color: #cccccc;
+    border-bottom: 1px solid #1e1e1e;
+    vertical-align: bottom;
 }
 
-tr:nth-child(even) {background-color: rgb(46, 46, 46)}
-tr:nth-child(odd) {background-color: rgb(63, 63, 63)}
-
-.row {
-    display: flex;
-    width: 100%;
+.rendered_html tbody tr:nth-child(odd) {
+ background: #282828;
 }
 
-input[type="submit"] {
-	background:linear-gradient(to bottom, #7892c2 0%, #476e9e 100%);
-	background-color:#7892c2;
-	border-radius:5px;
-	border:0px solid;
-    display:inline-block;
-    margin: 3px;
-	cursor:pointer;
-	color:#ffffff;
-	font-family:Arial;
-	padding:3px;
-	text-decoration:none;
+.rendered_html tbody tr {
+ background: #202020;
 }
 
-input[type="submit"]:hover {
-	background:linear-gradient(to bottom, #476e9e 5%, #7892c2 100%);
-	background-color:#476e9e;
+.rendered_html tbody tr:hover:nth-child(odd) {
+ background: #252525;
 }
 
-input[type="submit"]:focus {
-	position:relative;
-    top:1px;
-    background:linear-gradient(to bottom, #3a5677 5%, #5d6b86 100%);
-	background-color:#384d68;
+.rendered_html tbody tr:hover {
+ background: #1e1e1e;
 }
 
-.pressed {
-	position:relative;
-    top:1px;
-    background:linear-gradient(to bottom, #3a5677 5%, #5d6b86 100%);
-	background-color:#384d68;
+.rendered_html * + table {
+ margin-top: .05em;
 }
 
-.close {
-    color: #aaaaaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-  }
-  
-  .close:hover,
-  .close:focus {
-    color: #2d3d4d;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-div {
-    display: block;
-    margin: 0 auto;
-    max-width: 700px;
+.button_success,
+.button_error,
+.button_warning,
+.button_secondary {
+    color: white;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
-a:visited{
-    color: #c6c8c6;
+.button_success:hover,
+.button_error:hover,
+.button_warning:hover,
+.button_secondary:hover {
+    color: rgb(187, 187, 187);
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
-a{
-    text-decoration: none;
-    color: #c6c8c6;
+.button_success {
+    background: rgb(28, 184, 65);
 }
 
+.button_error {
+    background: rgb(202, 60, 60);
+}
+
+.button_warning {
+    background: rgb(223, 117, 20);
+}
+
+.button_secondary {
+    background: rgb(66, 184, 221);
+}
