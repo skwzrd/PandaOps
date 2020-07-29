@@ -2,20 +2,32 @@
 
 {% block body %}
 
-<div>
-    <h1>Panda Ops</h1>
-    <div>
+<div id="page">
+
+    {% include 'menu_left.html' %}
+
+    <div id="main_content">
+
         <div class="dropdown alignleft">
+
             <button class="dropbtn button_warning">Add</button>
+
             <div class="dropdown-content">
                 <form id="upload_df" method="POST" enctype="multipart/form-data">
                     <input type="file" name="upload_df" accept=".csv" onchange="upload_df">
                 </form>
                 <button id="sample_df" name="sample_df">Add Sample DF</button>
             </div>
+
         </div>
         <div class="dropdown alignleft">
-            <button class="dropbtn button_warning">Select</button>
+
+            <div id="select_df_dropdown">
+                {% if df_keys %}
+                    <button id="select_df_button" class="dropbtn button_warning">Select ({{ df_keys | length }})</button>
+                {% endif %}
+            </div>
+
             <div class="dropdown-content">
                 <div id="loaded_dfs">
                     {% if df_keys is not none %}
@@ -27,23 +39,32 @@
                     {% endif %}
                 </div>
             </div>
+
         </div>
+
         <button id="clear_df_cache" class="button_error alignright">Clear</button>
-    </div>
-    <br>
+        <br>
+        <br>
 
-    <br>
-    <div id="operations" style="display: none">
-        <button class="button_secondary" type="button" name="operate">All</button>
-        <button class="button_secondary" type="button" name="operate">Head</button>
-        <button class="button_secondary" type="button" name="operate">Tail</button>
-        <button class="button_secondary" type="button" name="operate">Stats</button>
+        <div id="df_display_area" class="rendered_html">
+            {% if df is none %}
+                <h3 id="df_key"></h3>
+                <div id="operations" style="display: none">
+                    {% include 'operations.html' %}
+                </div>
+                <div id="df">No dataframe selected.</div>
+            {% else %}
+                <h3 id="df_key">{{ df_key }}</h3>
+                <div id="operations">
+                    {% include 'operations.html' %}
+                </div>
+                <div id="df">
+                    {{ df | safe }}
+                </div>
+            {% endif %}
+        </div>
+        <br>
+        
     </div>
-
-    <div id="df_display_area" class="rendered_html">
-    </div>
-
 </div>
-
-
 {% endblock %}

@@ -19,6 +19,15 @@ In Command Prompt, execute `flask run` and visit http://localhost:5000/ in your 
 
 ### Progress
 
+#### Commit 4:
+- Refactored Python and JavaScript code
+- Made rows load dynamically in chunks
+- Added the number of loaded dfs in Select button
+- Added left menu
+- Preliminary set up for populating left menu content
+
+![Preview](resources/commit_4.gif)
+
 #### Commit 3:
 This was a big commit. I've changed all the POST requests which resulted in page refreshes on each webpage interaction into ajax requests. I also added better CSS styles. I'm pretty satisfied now with how dfs are being stored in-memory across requests (redis) and with how elements are updated dynamically without page refreshes (ajax requests). The other big features have yet to be added.
 ![Preview](resources/commit_3.gif)

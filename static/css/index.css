@@ -7,6 +7,14 @@ ul {
     border-radius: 3px;
 }
 
+h1 {
+    text-align: center;
+}
+
+h3 {
+    padding: 0px;
+}
+
 li {
     padding: 4px;
 }
@@ -45,6 +53,35 @@ body {
     background: #1e1e1e;
     -webkit-font-smoothing: antialiased !important;
 }
+
+html, body, #page, #menu_left, #menu_left_content {
+    height: 100%;
+}
+
+#menu_left {
+    float: left;
+    width: 180px;
+    margin-left: -200px;
+    padding: 8px;
+}
+
+#menu_left_content {
+    background-color: #353535;
+    margin-top: 50px;
+    padding: 8px;
+    height: 300px;
+}
+
+#main_content {
+    margin-top: 58px;
+    float: right;
+    width: 100%;
+}
+
+#page {
+    margin-left: 200px;
+}
+
 
 .rendered_html tr,
 .rendered_html th,
