@@ -4,3 +4,4 @@ __pycache__/
 redis_output.txt
 *.rdb
 node_modules/
+commit_*
